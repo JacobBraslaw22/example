@@ -1,0 +1,122 @@
+---
+title: "___blabla___"
+author: "jb"
+date: "`r Sys.Date()`"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    theme: lumen
+    vertical_layout : fill
+---
+<style>
+
+.navbar {
+  background-color:#007A5F;
+  border-color:#007A5F;
+}
+.navbar-brand {
+color:white!important;
+}
+.navbar-nav li a:hover, .navbar-nav > .active > a {
+color: #fff !important;
+
+background-color:#44A08B !important;
+border-color:#44A08B;
+background-image: none !important;
+}
+.sbframelist ul li.active {
+    background-color: #B1A800;
+}
+.chart-title {
+    color: #007A5F;
+}
+
+.dataTables_scrollBody {
+    max-height: 100% !important;
+}
+
+<tag-name style="white-space:pre">text in element&#9;more text</tag-name>
+</style>
+
+```{r}
+library(raster)
+library(tidyverse)
+library(leafem)
+library(leaflet)
+library(downloader)
+library(here)
+library(USAboundaries)
+library(sf)
+library(crosstalk)
+##running leaflet 2.1.0 to use addRasterRGB from leaflet##
+
+##Data## use once
+# ras_path<-"https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/50m/raster/NE1_50M_SR_W.zip"
+# downloader::download(ras_path,dest="dataset.zip",mode="wb")
+# unzip ("dataset.zip")
+
+#read in file
+ras_path1<-here::here('Rcode','rmd',"NE1_50M_SR_W","NE1_50M_SR_W.tif")
+ras<-raster::brick(ras_path1)
+
+#vector data
+west<- USAboundaries::us_states(resolution = "low") %>% 
+  filter(state_name %in% c("California","Utah","Nevada","Arizona")) %>% 
+  st_transform(crs=4326)
+
+## crop and mask
+ras<-raster::aggregate(ras,fact=20)
+```
+
+
+Main Map
+==========
+
+```{r}
+
+useDF<-west
+
+```
+
+
+```{r}
+#create shared data object as SF and as data.frame
+
+sd<-SharedData$new(useDF)
+
+```
+
+
+Inputs {.sidebar}
+--------------------------------
+### Filters
+
+```{r map}
+
+ filter_checkbox(
+   id = "name",
+   label = "name",
+   sharedData = sd,
+   group = ~name
+ )
+
+```
+
+
+
+Column {data-width=700}
+-------------------------------------
+
+### 
+
+```{r}
+
+leaflet(sd) %>%
+     addProviderTiles('Esri.WorldImagery', group = "geo") %>%
+   leafem::addRasterRGB(ras, r=1,g=2,b=3) %>% 
+     #add states
+    addPolygons()
+ 
+rm(sd,useDF) 
+```
+
